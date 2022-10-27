@@ -8,6 +8,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author akirakozov
@@ -23,23 +25,18 @@ public class GetProductsServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        List<String> body;
+
         try {
             List<Product> products = dbDao.selectAll();
 
-            response.getWriter().println("<html><body>");
+            body = products.stream()
+                    .map(product -> product.name + "\t" + product.price + "</br>")
+                    .collect(Collectors.toList());
 
-            for (Product product : products) {
-                response.getWriter().println(product.name + "\t" + product.price + "</br>");
-            }
-
-            response.getWriter().println("</body></html>");
-
-
+            HttpResponseUtils.writeResponse(response, Optional.empty(), body);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        response.setContentType("text/html");
-        response.setStatus(HttpServletResponse.SC_OK);
     }
 }

@@ -7,8 +7,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author akirakozov
@@ -26,72 +28,38 @@ public class QueryServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String command = request.getParameter("command");
 
-        if ("max".equals(command)) {
-            try {
+        try {
+            if ("max".equals(command)) {
                 Optional<Product> maxRes = dbDao.max();
 
-                PrintWriter writer = response.getWriter();
+                List<String> body = maxRes.stream()
+                        .map(product -> product.name + "\t" + product.price + "</br>")
+                        .collect(Collectors.toList());
 
-                writer.println("<html><body>");
-                writer.println("<h1>Product with max price: </h1>");
-
-                maxRes.ifPresent(product -> writer.println(product.name + "\t" + product.price + "</br>"));
-
-                writer.println("</body></html>");
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if ("min".equals(command)) {
-            try {
+                HttpResponseUtils.writeResponse(response, Optional.of("Product with max price: "), body);
+            } else if ("min".equals(command)) {
                 Optional<Product> minRes = dbDao.min();
 
-                PrintWriter writer = response.getWriter();
+                List<String> body = minRes.stream()
+                        .map(product -> product.name + "\t" + product.price + "</br>")
+                        .collect(Collectors.toList());
 
-                writer.println("<html><body>");
-                writer.println("<h1>Product with min price: </h1>");
-
-                minRes.ifPresent(product -> writer.println(product.name + "\t" + product.price + "</br>"));
-
-                writer.println("</body></html>");
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if ("sum".equals(command)) {
-            try {
+                HttpResponseUtils.writeResponse(response, Optional.of("Product with min price: "), body);
+            } else if ("sum".equals(command)) {
                 int sum = dbDao.sum();
 
-                PrintWriter writer = response.getWriter();
-
-                writer.println("<html><body>");
-                writer.println("Summary price: ");
-                writer.println(sum);
-                writer.println("</body></html>");
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if ("count".equals(command)) {
-            try {
+                HttpResponseUtils.writeResponse(response, Optional.empty(), List.of("Summary price: ", Integer.toString(sum)));
+            } else if ("count".equals(command)) {
                 int count = dbDao.count();
 
-                PrintWriter writer = response.getWriter();
+                HttpResponseUtils.writeResponse(response, Optional.empty(), List.of("Number of products: ", Integer.toString(count)));
 
-                writer.println("<html><body>");
-                writer.println("Number of products: ");
-                writer.println(count);
-                writer.println("</body></html>");
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            } else {
+                response.getWriter().println("Unknown command: " + command);
             }
-        } else {
-            response.getWriter().println("Unknown command: " + command);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-
-        response.setContentType("text/html");
-        response.setStatus(HttpServletResponse.SC_OK);
     }
 
 }
